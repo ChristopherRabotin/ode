@@ -1,7 +1,6 @@
 package dynamics
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/gonum/matrix/mat64"
@@ -95,10 +94,6 @@ func (s *MRP) B() *mat64.Dense {
 	B.Add(e1, s.Tilde(2))
 	B.Add(B, s.OuterProduct(2))
 	return B
-}
-
-func (s *MRP) String() string {
-	return fmt.Sprintf("[%1.5f  %1.5f  %1.5f]", s.s1, s.s2, s.s3)
 }
 
 // Attitude defines an attitude with an orientation, an angular velocity and an inertial tensor.

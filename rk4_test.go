@@ -76,3 +76,13 @@ func TestRK4Attitude(t *testing.T) {
 		t.Fatalf("angular momentum changed by %4.12f", diff)
 	}
 }
+
+func TestPanics(t *testing.T) {
+	assertPanic(t, "negative step", func() {
+		NewRK4(1, -1, nil)
+	})
+
+	assertPanic(t, "nil integrator", func() {
+		NewRK4(1, 1, nil)
+	})
+}
