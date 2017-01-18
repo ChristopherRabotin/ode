@@ -24,7 +24,7 @@ func NewRK4(x0 float64, stepSize float64, inte Integrable) (r *RK4) {
 func (r *RK4) Solve() (uint64, float64, error) {
 	iterNum := uint64(0)
 	xi := r.X0
-	for !r.Integator.Stop(iterNum) {
+	for !r.Integator.Stop(xi) {
 		halfStep := r.StepSize * 0.5
 		state := r.Integator.GetState()
 		newState := make([]float64, len(state))

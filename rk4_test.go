@@ -40,8 +40,8 @@ func (b *Balbasi1D) SetState(t float64, s []float64) {
 	b.state = s
 }
 
-func (b *Balbasi1D) Stop(i uint64) bool {
-	return i*30 >= 480
+func (b *Balbasi1D) Stop(t float64) bool {
+	return t > 480
 }
 
 func (b *Balbasi1D) Func(t float64, s []float64) []float64 {
@@ -64,8 +64,9 @@ type AttitudeTest struct {
 	*dynamics.Attitude
 }
 
-func (a *AttitudeTest) Stop(i uint64) bool {
-	return float64(i)*1e-6 >= 1e-1
+func (a *AttitudeTest) Stop(t float64) bool {
+	// Propagate for 0.1 seconds.
+	return t > 1e-1
 }
 
 func NewAttitudeTest() (a *AttitudeTest) {
@@ -77,7 +78,7 @@ func NewAttitudeTest() (a *AttitudeTest) {
 func TestRK4Attitude(t *testing.T) {
 	inte := NewAttitudeTest()
 	initMom := inte.Momentum()
-	for _, step := range []float64{1e-4, 1e-6, 1e-8, 1e-10, 1e-12} {
+	for _, step := range []float64{1e-6, 1e-8} {
 		if _, _, err := NewRK4(0, step, inte).Solve(); err != nil {
 			t.Fatalf("err: %+v\n", err)
 		}
@@ -99,8 +100,8 @@ func (v *V1DSimple) SetState(t float64, s []float64) {
 	v.state = s
 }
 
-func (v *V1DSimple) Stop(i uint64) bool {
-	return i >= 10
+func (v *V1DSimple) Stop(t float64) bool {
+	return floats.EqualWithinAbs(t, 1, tolerance)
 }
 
 func (v *V1DSimple) Func(x float64, y []float64) []float64 {
@@ -138,8 +139,8 @@ func (v *VSimple) SetState(t float64, s []float64) {
 	v.state = s
 }
 
-func (v *VSimple) Stop(i uint64) bool {
-	return i >= 189
+func (v *VSimple) Stop(t float64) bool {
+	return t >= 37.8
 }
 
 func (v *VSimple) Func(x float64, y []float64) []float64 {
@@ -179,8 +180,8 @@ func (v *KraichnanOrszag) SetState(t float64, s []float64) {
 	v.state = s
 }
 
-func (v *KraichnanOrszag) Stop(i uint64) bool {
-	return i >= v.steps
+func (v *KraichnanOrszag) Stop(t float64) bool {
+	return t >= float64(v.steps)*0.01
 }
 
 func (v *KraichnanOrszag) Func(x float64, y []float64) []float64 {
