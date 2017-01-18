@@ -132,7 +132,7 @@ func (a *Attitude) GetState() []float64 {
 }
 
 // SetState sets the state of this attitude for the EOM as defined below.
-func (a *Attitude) SetState(i uint64, s []float64) {
+func (a *Attitude) SetState(t float64, s []float64) {
 	a.Attitude.s1 = s[0]
 	a.Attitude.s2 = s[1]
 	a.Attitude.s3 = s[2]

@@ -1,12 +1,15 @@
 package ode
 
 import (
-	"fmt"
 	"math"
 	"testing"
 
 	"github.com/ChristopherRabotin/ode/examples/angularMomentum"
 	"github.com/gonum/floats"
+)
+
+const (
+	tolerance = 1e-10
 )
 
 func TestPanics(t *testing.T) {
@@ -20,14 +23,12 @@ func TestPanics(t *testing.T) {
 }
 
 type Balbasi1D struct {
-	state  []float64 // Note that we don't have a state history here.
-	prevIt uint
+	state []float64
 }
 
 func NewBalbasi1D() (b *Balbasi1D) {
 	b = &Balbasi1D{}
 	b.state = []float64{1200.0}
-	b.prevIt = 0
 	return
 }
 
@@ -35,12 +36,8 @@ func (b *Balbasi1D) GetState() []float64 {
 	return b.state
 }
 
-func (b *Balbasi1D) SetState(i uint64, s []float64) {
+func (b *Balbasi1D) SetState(t float64, s []float64) {
 	b.state = s
-	if i != 0 && b.prevIt+1 != uint(i) {
-		panic(fmt.Errorf("expected i=%d, got i=%d", b.prevIt+1, i))
-	}
-	b.prevIt = uint(i)
 }
 
 func (b *Balbasi1D) Stop(i uint64) bool {
@@ -90,6 +87,45 @@ func TestRK4Attitude(t *testing.T) {
 	}
 }
 
+type V1DSimple struct {
+	state []float64
+}
+
+func (v *V1DSimple) GetState() []float64 {
+	return v.state
+}
+
+func (v *V1DSimple) SetState(t float64, s []float64) {
+	v.state = s
+}
+
+func (v *V1DSimple) Stop(i uint64) bool {
+	return i >= 10
+}
+
+func (v *V1DSimple) Func(x float64, y []float64) []float64 {
+	return []float64{-2 * y[0]}
+}
+
+func TestRK4Simple1D(t *testing.T) {
+	inte := new(V1DSimple)
+	inte.state = []float64{1}
+	iterNum, xi, err := NewRK4(0, 0.1, inte).Solve()
+	if err != nil {
+		t.Fatalf("err: %+v\n", err)
+	}
+	if !floats.EqualWithinAbs(xi, 1, tolerance) {
+		t.Fatalf("xi=%f != 1.0", xi)
+	}
+	if iterNum != 10 {
+		t.Fatalf("iterNum=%d != 10", iterNum)
+	}
+	exp := 0.1353395484305101
+	if !floats.EqualWithinAbs(inte.GetState()[0], exp, tolerance) {
+		t.Fatalf("\nstate=%f\n  exp=%f", inte.GetState()[0], exp)
+	}
+}
+
 type VSimple struct {
 	state []float64
 }
@@ -98,7 +134,7 @@ func (v *VSimple) GetState() []float64 {
 	return v.state
 }
 
-func (v *VSimple) SetState(i uint64, s []float64) {
+func (v *VSimple) SetState(t float64, s []float64) {
 	v.state = s
 }
 
@@ -139,7 +175,7 @@ func (v *KraichnanOrszag) GetState() []float64 {
 	return v.state
 }
 
-func (v *KraichnanOrszag) SetState(i uint64, s []float64) {
+func (v *KraichnanOrszag) SetState(t float64, s []float64) {
 	v.state = s
 }
 
@@ -152,7 +188,6 @@ func (v *KraichnanOrszag) Func(x float64, y []float64) []float64 {
 }
 
 func TestRK4KO(t *testing.T) {
-	tolerance := 1e-10
 	for _, steps := range []uint64{30, 3000} {
 		inte := &KraichnanOrszag{steps, []float64{1, .4, .2}}
 		iterNum, xi, err := NewRK4(0, 0.01, inte).Solve()

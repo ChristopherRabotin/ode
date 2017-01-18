@@ -55,7 +55,7 @@ func (r *RK4) Solve() (uint64, float64, error) {
 			newState[i] = state[i] + r.StepSize*(f1[i]+2*f2[i]+2*f3[i]+f4[i])/6
 		}
 		xi += r.StepSize
-		r.Integator.SetState(iterNum, newState)
+		r.Integator.SetState(xi, newState)
 		iterNum++ // Don't forget to increment the number of iterations.
 	}
 
