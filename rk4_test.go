@@ -6,7 +6,18 @@ import (
 	"testing"
 
 	"github.com/ChristopherRabotin/ode/examples/angularMomentum"
+	"github.com/gonum/floats"
 )
+
+func TestPanics(t *testing.T) {
+	assertPanic(t, "negative step", func() {
+		NewRK4(1, -1, nil)
+	})
+
+	assertPanic(t, "nil integrator", func() {
+		NewRK4(1, 1, nil)
+	})
+}
 
 type Balbasi1D struct {
 	state  []float64 // Note that we don't have a state history here.
@@ -69,11 +80,13 @@ func NewAttitudeTest() (a *AttitudeTest) {
 func TestRK4Attitude(t *testing.T) {
 	inte := NewAttitudeTest()
 	initMom := inte.Momentum()
-	if _, _, err := NewRK4(0, 1e-6, inte).Solve(); err != nil {
-		t.Fatalf("err: %+v\n", err)
-	}
-	if diff := math.Abs(initMom - inte.Momentum()); diff > 1e-8 {
-		t.Fatalf("angular momentum changed by %4.12f", diff)
+	for _, step := range []float64{1e-4, 1e-6, 1e-8, 1e-10, 1e-12} {
+		if _, _, err := NewRK4(0, step, inte).Solve(); err != nil {
+			t.Fatalf("err: %+v\n", err)
+		}
+		if diff := math.Abs(initMom - inte.Momentum()); diff > 1e-8 {
+			t.Fatalf("angular momentum changed by %4.12f", diff)
+		}
 	}
 }
 
@@ -90,7 +103,6 @@ func (v *VSimple) SetState(i uint64, s []float64) {
 }
 
 func (v *VSimple) Stop(i uint64) bool {
-	//(190 - 1) * 0.2
 	return i >= 189
 }
 
@@ -114,16 +126,57 @@ func TestRK4Simple(t *testing.T) {
 	exp := []float64{+1.0021441571397413e-01, +9.9488186473553231e-01}
 	state := inte.GetState()
 	if exp[0] != state[0] || exp[1] != state[1] {
-		t.Fatalf("state=%+v\n  exp=%+v", state, exp)
+		t.Fatalf("\nstate=%+v\n  exp=%+v", state, exp)
 	}
 }
 
-func TestPanics(t *testing.T) {
-	assertPanic(t, "negative step", func() {
-		NewRK4(1, -1, nil)
-	})
+type KraichnanOrszag struct {
+	steps uint64
+	state []float64
+}
 
-	assertPanic(t, "nil integrator", func() {
-		NewRK4(1, 1, nil)
-	})
+func (v *KraichnanOrszag) GetState() []float64 {
+	return v.state
+}
+
+func (v *KraichnanOrszag) SetState(i uint64, s []float64) {
+	v.state = s
+}
+
+func (v *KraichnanOrszag) Stop(i uint64) bool {
+	return i >= v.steps
+}
+
+func (v *KraichnanOrszag) Func(x float64, y []float64) []float64 {
+	return []float64{y[0] * y[2], -y[1] * y[2], -y[0]*y[0] + y[1]*y[1]}
+}
+
+func TestRK4KO(t *testing.T) {
+	tolerance := 1e-10
+	for _, steps := range []uint64{30, 3000} {
+		inte := &KraichnanOrszag{steps, []float64{1, .4, .2}}
+		iterNum, xi, err := NewRK4(0, 0.01, inte).Solve()
+		if err != nil {
+			t.Fatalf("err: %+v\n", err)
+		}
+		if iterNum != steps {
+			t.Fatalf("iterNum=%d != %d", iterNum, steps)
+		}
+		var exp []float64
+		if steps == 30 {
+			if !floats.EqualWithinAbs(xi, 0.3, tolerance) {
+				t.Fatalf("xi=%.16f != 0.3", xi)
+			}
+			exp = []float64{1.0209861554390987e+00, 3.9177808423412647e-01, -6.4009398764259762e-02}
+		} else {
+			if !floats.EqualWithinAbs(xi, 30, tolerance) {
+				t.Fatalf("xi=%.16f != 30", xi)
+			}
+			exp = []float64{4.8745696934931565e-01, 8.2058525186654796e-01, -5.3761096276439480e-01}
+		}
+		state := inte.GetState()
+		if !floats.EqualApprox(exp, state, tolerance) {
+			t.Fatalf("\nstate=%+v\n  exp=%+v", state, exp)
+		}
+	}
 }
