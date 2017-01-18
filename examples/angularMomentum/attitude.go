@@ -11,7 +11,7 @@ const (
 )
 
 var (
-	eye = mat64.NewDense(3, 3, []float64{1, 0, 0, 0, 0, 0, 0, 0, 1})
+	eye = mat64.NewDense(3, 3, []float64{1, 0, 0, 0, 1, 0, 0, 0, 1})
 )
 
 /*-----*/

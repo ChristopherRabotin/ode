@@ -77,6 +77,47 @@ func TestRK4Attitude(t *testing.T) {
 	}
 }
 
+type VSimple struct {
+	state []float64
+}
+
+func (v *VSimple) GetState() []float64 {
+	return v.state
+}
+
+func (v *VSimple) SetState(i uint64, s []float64) {
+	v.state = s
+}
+
+func (v *VSimple) Stop(i uint64) bool {
+	//(190 - 1) * 0.2
+	return i >= 189
+}
+
+func (v *VSimple) Func(x float64, y []float64) []float64 {
+	return []float64{y[1], -y[0]}
+}
+
+func TestRK4Simple(t *testing.T) {
+	inte := new(VSimple)
+	inte.state = []float64{0, 1}
+	iterNum, xi, err := NewRK4(0, 0.2, inte).Solve()
+	if err != nil {
+		t.Fatalf("err: %+v\n", err)
+	}
+	if xi != 37.8 {
+		t.Fatalf("xi=%f != 37.8", xi)
+	}
+	if iterNum != 189 {
+		t.Fatalf("iterNum=%d != 189", iterNum)
+	}
+	exp := []float64{+1.0021441571397413e-01, +9.9488186473553231e-01}
+	state := inte.GetState()
+	if exp[0] != state[0] || exp[1] != state[1] {
+		t.Fatalf("state=%+v\n  exp=%+v", state, exp)
+	}
+}
+
 func TestPanics(t *testing.T) {
 	assertPanic(t, "negative step", func() {
 		NewRK4(1, -1, nil)
